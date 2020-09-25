@@ -12,10 +12,11 @@ def ngram_bleu(references, sentence, n):
     """
 
     refLen = []
+ 
     clipped = {}
+
     sentNgrams = [' '.join([str(jd) for jd in sentence[id:id + n]])
                   for id in range(len(sentence) - (n - 1))]
-
     candNlen = (len(sentNgrams))
 
     for refs in references:
@@ -29,14 +30,13 @@ def ngram_bleu(references, sentence, n):
                 if not clipped.keys() == w:
                     clipped[w] = 1
 
-    ccount = sum(clipped.values())
+    clipped_count = sum(clipped.values())
     closest_refLen = min(refLen, key=lambda m: abs(m - candNlen))
 
     if candNlen > closest_refLen:
         bp = 1
     else:
         bp = np.exp(1 - (closest_refLen / len(sentence)))
-
-    bleuScore = bp * np.exp(np.log(ccount / candNlen))
+    bleuScore = bp * np.exp(np.log(clipped_count / candNlen))
 
     return bleuScore
