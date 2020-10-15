@@ -4,25 +4,26 @@ import numpy as np
 
 
 def convolve_grayscale_same(images, kernel):
-    """performs a valid convolurion on grayscale image"""
-    m, h, w = images.shape
-    kh, kw = kernel.shape
+    """
+    performs a same convolution on grayscale images:
+    :return: numpy.ndarray containing the convolved images
+    """
+    w, h, m = images.shape[2], images.shape[1], images.shape[0]
+    kw, kh = kernel.shape[1], kernel.shape[0]
+    ph = max(int((kh - 1) / 2), int(kh / 2))
+    pw = max(int((kw - 1) / 2), int(kw / 2))
 
-    padding_h = int((kh - 1) / 2)
-    padding_w = int((kw - 1) / 2)
+    images_padded = np.pad(images,
+                           pad_width=((0, 0), (ph, ph), (pw, pw)),
+                           mode='constant', constant_values=0)
 
-    output_h = h + (2 * padding_h) - kh + 1
-    output_w = w + (2 * padding_w) - kw + 1
-    output = np.zeros((m, output_h, output_w))
+    output = np.zeros((m, h, w))
 
-    images_arr = np.arange(0, m)
-    pad_img = np.pad(images, 1, mode="symmetric")
-
-    for x in range(output_h):
-        for y in range(output_w):
-            y1 = y + kw
-            x1 = x + kh
-            output[images_arr, x, y] = np.sum(np.multiply(
-                pad_img[images_arr, x: x1, y: y1], kernel), axis=(1, 2))
+    for y in range(h):
+        for x in range(w):
+            output[:, y, x] =\
+                (kernel * images_padded[:,
+                                        y: y + kh,
+                                        x: x + kw]).sum(axis=(1, 2))
 
     return output

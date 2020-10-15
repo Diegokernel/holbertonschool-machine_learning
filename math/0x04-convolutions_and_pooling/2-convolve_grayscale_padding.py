@@ -5,23 +5,23 @@ import numpy as np
 
 def convolve_grayscale_padding(images, kernel, padding):
     """performs a valid convolurion on grayscale image"""
-    m, h, w = images.shape
-    kh, kw = kernel.shape
+
+    w, h, m = images.shape[2], images.shape[1], images.shape[0]
+    kw, kh = kernel.shape[1], kernel.shape[0]
     ph = padding[0]
     pw = padding[1]
+    images_padded = np.pad(images,
+                           pad_width=((0, 0), (ph, ph), (pw, pw)),
+                           mode='constant', constant_values=0)
+    new_h = int(images_padded.shape[1] - kh + 1)
+    new_w = int(images_padded.shape[2] - kw + 1)
+    output = np.zeros((m, new_h, new_w))
 
-    output_h = h + (2 * ph) - kh + 1
-    output_w = w + (2 * pw) - kw + 1
-    output = np.zeros((m, output_h, output_w))
-
-    images_arr = np.arange(0, m)
-    pad_img = np.pad(images, ((0, 0), (ph, ph), (pw, pw)), mode="symmetric")
-
-    for x in range(output_h):
-        for y in range(output_w):
-            y1 = y + kw
-            x1 = x + kh
-            output[images_arr, x, y] = np.sum(np.multiply(
-                pad_img[images_arr, x: x1, y: y1], kernel), axis=(1, 2))
+    for x in range(new_w):
+        for y in range(new_h):
+            output[:, y, x] = \
+                (kernel * images_padded[:,
+                                        y: y + kh,
+                                        x: x + kw]).sum(axis=(1, 2))
 
     return output
