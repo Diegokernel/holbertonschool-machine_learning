@@ -11,32 +11,65 @@ def ngram_bleu(references, sentence, n):
     calculates n-gram BLEU score for a sentence
     """
 
-    refLen = []
- 
-    clipped = {}
+def ngramify(corpus, n):
+    """Convert a corpus of 1-grams to n-grams"""
+    unlist = 0
 
-    sentNgrams = [' '.join([str(jd) for jd in sentence[id:id + n]])
-                  for id in range(len(sentence) - (n - 1))]
-    candNlen = (len(sentNgrams))
+    if type(corpus[0]) is not list:
+        corpus = [corpus]
+        unlist = 1
 
-    for refs in references:
-        refNgrams = [' '.join([str(jd) for jd in refs[id:id + n]])
-                     for id in range(len(sentence) - (n - 1))]
+    new_corpus = []
+    for line in corpus:
+        new_line = []
 
-        refLen.append(len(refs))
+        for gram in range(len(line) - n + 1):
+            new_gram = ""
 
-        for w in refNgrams:
-            if w in sentNgrams:
-                if not clipped.keys() == w:
-                    clipped[w] = 1
+            for i in range(n):
+                if i != 0:
+                    new_gram += " "
 
-    clipped_count = sum(clipped.values())
-    closest_refLen = min(refLen, key=lambda m: abs(m - candNlen))
+                new_gram += line[gram + i]
 
-    if candNlen > closest_refLen:
-        bp = 1
+            new_line.append(new_gram)
+        new_corpus.append(new_line)
+
+    if unlist:
+        return new_corpus[0]
+    return new_corpus
+
+
+def ngram_bleu(references, sentence, n):
+    """Calculate unigram bleu score"""
+    references = ngramify(references, n)
+    sentence = ngramify(sentence, n)
+    sent_dict = {}
+
+    for gram in sentence:
+        sent_dict[gram] = sent_dict.get(gram, 0) + 1
+
+    max_dict = {}
+    for reference in references:
+        this_ref = {}
+        for gram in reference:
+            this_ref[gram] = this_ref.get(gram, 0) + 1
+        for gram in this_ref:
+            max_dict[gram] = max(max_dict.get(gram, 0), this_ref[gram])
+
+    in_ref = 0
+    for gram in sent_dict:
+        in_ref += min(max_dict.get(gram, 0), sent_dict[gram])
+
+    closest = np.argmin(np.abs([len(ref) - len(sentence)
+                        for ref in references]))
+
+    closest = len(references[closest])
+
+    if len(sentence) >= closest:
+        brevity = 1
+
     else:
-        bp = np.exp(1 - (closest_refLen / len(sentence)))
-    bleuScore = bp * np.exp(np.log(clipped_count / candNlen))
+        brevity = np.exp(1 - (closest + n - 1) / (len(sentence) + n - 1))
 
-    return bleuScore
+    return brevity * in_ref / len(sentence)

@@ -11,25 +11,32 @@ def uni_bleu(references, sentence):
     calculates the unigram BLEU score for a sentence
     """
 
-    candidateLen = len(sentence)
-    refLen = []
-    clipped = {}
+    sent_dict = {}
+    for word in sentence:
+        sent_dict[word] = sent_dict.get(word, 0) + 1
+    max_dict = {}
 
-    for refs in references:
-        refLen.append(len(refs))
+    for reference in references:
+        this_ref = {}
+        for word in reference:
+            this_ref[word] = this_ref.get(word, 0) + 1
 
-        for w in refs:
-            if w in sentence:
-                if not clipped.keys() == w: 
-                    clipped[w] = 1
+        for word in this_ref:
+            max_dict[word] = max(max_dict.get(word, 0), this_ref[word])
+            
+    in_ref = 0
+    for word in sent_dict:
+        in_ref += min(max_dict.get(word, 0), sent_dict[word])
 
-    clipped_count = sum(clipped.values())
-    closest_refLen = min(refLen, key=lambda m: abs(m - candidateLen))
+    closest = np.argmin(np.abs([len(ref) - len(sentence)
+                                for ref in references]))
 
-    if candidateLen > closest_refLen:
-        bp = 1
+    closest = len(references[closest])
+    
+    if len(sentence) >= closest:
+        brevity = 1
+
     else:
-        bp = np.exp(1 - float(closest_refLen) / float(candidateLen))
-    bleuScore = bp * np.exp(np.log(clipped_count / candidateLen))
+        brevity = np.exp(1 - closest / len(sentence))
 
-    return bleuScore
+    return brevity * in_ref / len(sentence)
